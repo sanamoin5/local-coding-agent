@@ -16,12 +16,15 @@ class CodingWorkflow:
         if state.status == "testing":
             return "tester"
         if state.status == "fixing":
-            return "coder"
+            return "fixer"
         if state.status == "verifying":
             return "verifier"
         return "done"
 
     def advance(self, state: RunState, tests_passed: bool, reviewer_blocked: bool) -> RunState:
+        if state.status in {"done", "failed"}:
+            return state
+
         if state.status == "planning":
             state.status = "coding"
         elif state.status == "coding":
@@ -35,4 +38,8 @@ class CodingWorkflow:
             state.iteration_count += 1
         elif state.status == "verifying":
             state.status = "done" if tests_passed and not reviewer_blocked else "failed"
+
+        if state.iteration_count >= state.max_iterations and state.status not in {"done", "failed"}:
+            state.status = "failed"
+
         return state

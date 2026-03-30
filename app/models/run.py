@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -45,3 +46,22 @@ class RunState(BaseModel):
         "failed",
     ] = "planning"
     iteration_count: int = 0
+    max_iterations: int = 5
+
+
+class PersistedRun(BaseModel):
+    id: int
+    state: RunState
+    created_at: datetime
+    updated_at: datetime
+
+
+class RunStepRecord(BaseModel):
+    id: int
+    run_id: int
+    node: str
+    status_before: str
+    status_after: str
+    tests_passed: bool
+    reviewer_blocked: bool
+    created_at: datetime

@@ -10,6 +10,8 @@ class ValidationError(Exception):
 def ensure_within_workspace(workspace_root: str, relative_path: str) -> Path:
     root = Path(workspace_root).resolve()
     destination = (root / relative_path).resolve()
-    if not str(destination).startswith(str(root)):
-        raise ValidationError(f"Path escapes workspace: {relative_path}")
+    try:
+        destination.relative_to(root)
+    except ValueError as exc:
+        raise ValidationError(f"Path escapes workspace: {relative_path}") from exc
     return destination

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+from typing import Any
 
 from app.models.run import PersistedRun, RunState, RunStepRecord
+from app.models.tool_call import ToolCallRecord
 from app.storage.db import Database
 
 
@@ -74,6 +76,36 @@ class RunRepository:
             for row in rows
         ]
 
+    def add_tool_call(
+        self,
+        run_id: int,
+        action: str,
+        args: dict[str, Any],
+        ok: bool,
+        output: Any,
+        error: str | None,
+    ) -> ToolCallRecord:
+        args_json = json.dumps(args)
+        output_json = json.dumps(output)
+        with self.db.connect() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO tool_calls(run_id, action, args_json, ok, output_json, error)
+                VALUES(?, ?, ?, ?, ?, ?)
+                """,
+                (run_id, action, args_json, int(ok), output_json, error),
+            )
+            row = conn.execute("SELECT * FROM tool_calls WHERE id = ?", (cursor.lastrowid,)).fetchone()
+        return self._row_to_tool_call(row)
+
+    def list_tool_calls(self, run_id: int) -> list[ToolCallRecord]:
+        with self.db.connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM tool_calls WHERE run_id = ? ORDER BY id ASC",
+                (run_id,),
+            ).fetchall()
+        return [self._row_to_tool_call(row) for row in rows]
+
     def _row_to_run(self, row) -> PersistedRun:
         state_data = json.loads(row["state_json"])
         return PersistedRun(
@@ -81,4 +113,16 @@ class RunRepository:
             state=RunState.model_validate(state_data),
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
+        )
+
+    def _row_to_tool_call(self, row) -> ToolCallRecord:
+        return ToolCallRecord(
+            id=row["id"],
+            run_id=row["run_id"],
+            action=row["action"],
+            args_json=row["args_json"],
+            ok=bool(row["ok"]),
+            output_json=row["output_json"],
+            error=row["error"],
+            created_at=datetime.fromisoformat(row["created_at"]),
         )

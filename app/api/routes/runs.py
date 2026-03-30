@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.models.run import PersistedRun, RunStepRecord
+from app.models.tool_call import ActionRequest, ActionResult, ToolCallRecord
 from app.services.run_service import RunService
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -51,3 +52,19 @@ def list_steps(run_id: int) -> list[RunStepRecord]:
     if run is None:
         raise HTTPException(status_code=404, detail="Run not found")
     return service.list_steps(run_id)
+
+
+@router.post("/{run_id}/actions", response_model=ActionResult)
+def execute_action(run_id: int, payload: ActionRequest) -> ActionResult:
+    try:
+        return service.execute_action(run_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/{run_id}/tool-calls", response_model=list[ToolCallRecord])
+def list_tool_calls(run_id: int) -> list[ToolCallRecord]:
+    run = service.get_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="Run not found")
+    return service.list_tool_calls(run_id)

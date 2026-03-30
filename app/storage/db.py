@@ -42,3 +42,18 @@ class Database:
                 )
                 """
             )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS tool_calls (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_id INTEGER NOT NULL,
+                    action TEXT NOT NULL,
+                    args_json TEXT NOT NULL,
+                    ok INTEGER NOT NULL,
+                    output_json TEXT NOT NULL,
+                    error TEXT,
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(run_id) REFERENCES runs(id)
+                )
+                """
+            )

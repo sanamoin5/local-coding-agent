@@ -17,20 +17,22 @@ class SubprocessSandbox:
     def __init__(self, workspace_root: str, timeout_seconds: int = 120) -> None:
         self.workspace_root = workspace_root
         self.timeout_seconds = timeout_seconds
-        self.allowed_commands = {
-            "python",
-            "pytest",
-            "ruff",
-            "mypy",
-            "npm",
-        }
+        self.allowed_command_prefixes = [
+            ["python", "-m", "pytest"],
+            ["pytest"],
+            ["ruff", "check"],
+            ["ruff", "format", "--check"],
+            ["mypy"],
+            ["npm", "test"],
+            ["npm", "run", "build"],
+        ]
 
     def run(self, command: str) -> CommandResult:
         parts = shlex.split(command)
         if not parts:
             raise ValueError("Command cannot be empty")
-        if parts[0] not in self.allowed_commands:
-            raise PermissionError(f"Command not allowed: {parts[0]}")
+        if not self._is_allowed(parts):
+            raise PermissionError(f"Command not allowed by policy: {command}")
 
         completed = subprocess.run(
             parts,
@@ -46,3 +48,9 @@ class SubprocessSandbox:
             stdout=completed.stdout,
             stderr=completed.stderr,
         )
+
+    def _is_allowed(self, parts: list[str]) -> bool:
+        for prefix in self.allowed_command_prefixes:
+            if parts[: len(prefix)] == prefix:
+                return True
+        return False

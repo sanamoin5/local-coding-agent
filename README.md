@@ -14,13 +14,16 @@ A **local-first coding agent platform** scaffold with four layers:
 - Fixed workflow engine (`CodingWorkflow`) for planner/coder/reviewer/tester/verifier transitions with max-iteration failure guard.
 - Subprocess sandbox with command allowlist and timeout enforcement.
 - Workspace-safe file tools with strict path traversal protection.
-- SQLite-backed run persistence for run state + run steps.
+- SQLite-backed run persistence for run state, run steps, and tool calls.
+- Action broker in `RunService.execute_action` that validates run workspace and executes controlled file/command tools.
 - FastAPI endpoints:
   - `POST /runs` create run
   - `GET /runs/{run_id}` get current run state
   - `POST /runs/{run_id}/tick` advance workflow state with gate outcomes
   - `GET /runs/{run_id}/steps` list execution timeline
-- Unit tests for path validation, workflow stop conditions, and run persistence.
+  - `POST /runs/{run_id}/actions` execute a validated tool action (`list_files`, `read_file`, `write_file`, `run_command`)
+  - `GET /runs/{run_id}/tool-calls` list tool call audit trail
+- Unit tests for path validation, workflow stop conditions, persistence, service action logging, and sandbox policy enforcement.
 
 ## Run locally
 
